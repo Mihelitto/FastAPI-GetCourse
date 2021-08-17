@@ -1,3 +1,5 @@
 uvicorn==0.15.0
 fastapi==0.68.0
 pydantic~=1.8.2
+environs[django]==9.3.3
+requests~=2.26.0
