@@ -1,61 +1,41 @@
+import hashlib
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-
+import jwt
+import config
 import getcourse_api
-from models import User, UserInDB
+import db
+from models import User
+
 
 app = FastAPI()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-fake_users_db = {
-    "johndoe": {
-        "username": "johndoe",
-        "full_name": "John Doe",
-        "email": "johndoe@example.com",
-        "hashed_password": "fakehashedsecret",
-        "disabled": False,
-    },
-    "alice": {
-        "username": "alice",
-        "full_name": "Alice Wonderson",
-        "email": "alice@example.com",
-        "hashed_password": "fakehashedsecret2",
-        "disabled": True,
-    },
-}
+
+def hash_password(password: str):
+    return hashlib.sha1(password.encode('utf-8')).hexdigest()
 
 
-def fake_hash_password(password: str):
-    return "fakehashed" + password
+def decode_token(token):
+    user = jwt.decode(token, config.secret_token_key, algorithms=["HS256"])
+    print(user)
+    return db.session.query(
+        db.User.id,
+        db.User.username,
+    ).filter(db.User.username == user["username"], db.User.id == user["id"]).first()
 
 
-def fake_decode_token(token):
-    return User(
-        username=token + "fakedecoded", email="john@example.com", full_name="John Doe"
+def create_token(user):
+    return jwt.encode(
+        {"id": user[0], "username": user[1]},
+        config.secret_token_key,
+        algorithm="HS256"
     )
 
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
-    user = fake_decode_token(token)
-    return user
-
-
-def get_user(db, username: str):
-    if username in db:
-        user_dict = db[username]
-        return UserInDB(**user_dict)
-
-
-def fake_decode_token(token):
-    # This doesn't provide any security at all
-    # Check the next version
-    user = get_user(fake_users_db, token)
-    return user
-
-
-async def get_current_user(token: str = Depends(oauth2_scheme)):
-    user = fake_decode_token(token)
+    user = decode_token(token)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -65,14 +45,11 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     return user
 
 
-async def get_current_active_user(current_user: User = Depends(get_current_user)):
-    if current_user.disabled:
-        raise HTTPException(status_code=400, detail="Inactive user")
-    return current_user
-
-
 @app.get("/{account_name}/deals")
-def get_deals(deals: dict = Depends(getcourse_api.get_deals), token: str = Depends(oauth2_scheme)):
+def get_deals(
+        deals: dict = Depends(getcourse_api.get_deals),
+        token: str = Depends(oauth2_scheme)
+        ):
     return deals, token
 
 
@@ -82,18 +59,27 @@ def post_deals(deal: dict = Depends(getcourse_api.post_deal)):
 
 
 @app.post("/token")
-async def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    user_dict = fake_users_db.get(form_data.username)
-    if not user_dict:
-        raise HTTPException(status_code=400, detail="Incorrect username or password")
-    user = UserInDB(**user_dict)
-    hashed_password = fake_hash_password(form_data.password)
-    if not hashed_password == user.hashed_password:
-        raise HTTPException(status_code=400, detail="Incorrect username or password")
+def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    user = db.session.query(db.User.id, db.User.username, db.User.hashed_password)\
+        .filter(db.User.username == form_data.username).first()
+    print(user)
+    if not user:
+        raise HTTPException(
+            status_code=400,
+            detail="Incorrect username or password"
+        )
+    if not user[2] == hash_password(form_data.password):
+        raise HTTPException(
+            status_code=400,
+            detail="Incorrect username or password"
+        )
 
-    return {"access_token": user.username, "token_type": "bearer"}
+    return {
+        "access_token": create_token(user),
+        "token_type": "bearer"
+    }
 
 
 @app.get("/users/me")
-async def read_users_me(current_user: User = Depends(get_current_active_user)):
+async def read_users_me(current_user: User = Depends(get_current_user)):
     return current_user
