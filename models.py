@@ -10,10 +10,14 @@ class Deal(BaseModel):
     user_email: str
 
 
+class NewUser(BaseModel):
+    username: str
+    password: str
+    password_repeat: str
+
+
 class User(BaseModel):
     username: str
-    email: Optional[str] = None
-    full_name: Optional[str] = None
     disabled: Optional[bool] = None
 
 

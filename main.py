@@ -5,7 +5,7 @@ import jwt
 import config
 import getcourse_api
 import db
-from models import User
+from models import User, NewUser
 
 
 app = FastAPI()
@@ -83,3 +83,22 @@ def login(form_data: OAuth2PasswordRequestForm = Depends()):
 @app.get("/users/me")
 async def read_users_me(current_user: User = Depends(get_current_user)):
     return current_user
+
+
+@app.get("/users")
+async def get_users():
+    return db.session.query(
+        db.User.id,
+        db.User.username,
+        db.User.hashed_password
+    ).all()
+
+
+@app.post("/users")
+async def post_user(user: NewUser):
+    if user.password == user.password_repeat:
+        new_user = db.User(user.username, hash_password(user.password), False)
+        db.session.add(new_user)
+        db.session.commit()
+        return {"user": new_user.username, "user_id": new_user.id, "status": "created"}
+    return {"error": "Password mismatch"}
