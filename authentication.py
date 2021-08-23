@@ -14,10 +14,10 @@ def hash_password(password: str):
 
 def decode_token(token):
     user = jwt.decode(token, config.secret_token_key, algorithms=["HS256"])
-    print(user)
     return db.session.query(
         db.User.id,
         db.User.username,
+        db.User.secret_key
     ).filter(
         db.User.username == user["username"],
         db.User.id == user["id"]

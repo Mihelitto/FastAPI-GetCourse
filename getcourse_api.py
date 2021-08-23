@@ -5,7 +5,6 @@ from json import JSONDecodeError
 import requests
 from fastapi import Depends
 from typing import Optional
-from config import secret_key
 from models import Deal
 from authentication import get_current_user
 
@@ -14,8 +13,8 @@ def get_deals(status: Optional[str] = 'new', user: tuple = Depends(get_current_u
     account_name = user[1]
     export_deals_url = f"https://{account_name}.getcourse.ru/pl/api/account/deals"
     export_url = f"https://{account_name}.getcourse.ru/pl/api/account/exports/"
-    export_deals_params = {'key': secret_key, 'status': status}
-    params_export = {'key': secret_key}
+    export_deals_params = {'key': user[2], 'status': status}
+    params_export = {'key': user[2]}
 
     try:
         response = requests.get(export_deals_url, params=export_deals_params)
@@ -66,7 +65,7 @@ def post_deal(deal: Deal, user: tuple = Depends(get_current_user)):
     import_deals_url = f"https://{account_name}.getcourse.ru/pl/api/deals"
     json_params = json.dumps(params)
     encode_params = base64.b64encode(json_params.encode("UTF-8"))
-    params_import = {'action': 'add', 'key': secret_key, "params": encode_params}
+    params_import = {'action': 'add', 'key': user[2], "params": encode_params}
 
     try:
         response = requests.post(import_deals_url, data=params_import)

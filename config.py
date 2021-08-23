@@ -4,7 +4,6 @@ from environs import Env
 env = Env()
 env.read_env()
 
-secret_key = env.str('SECRET_KEY', 'REPLACE_ME')
 secret_token_key = env.str('SECRET_TOKEN_KEY', 'REPLACE_ME')
 database = env.str('DATABASE_NAME', 'fastApi')
 db_user = env.str('DB_USER')

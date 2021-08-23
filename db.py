@@ -12,12 +12,14 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     username = Column(String)
     hashed_password = Column(String)
+    secret_key = Column(String)
     disabled = Column(Boolean)
 
-    def __init__(self, username, password, disabled=False):
+    def __init__(self, username, password, secret_key, disabled=False):
         self.username = username
         self.hashed_password = password
         self.disabled = disabled
+        self.secret_key = secret_key
 
     def __repr__(self):
         return f"<User('{self.username}', ID:'{self.id}')>"

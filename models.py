@@ -14,6 +14,7 @@ class NewUser(BaseModel):
     username: str
     password: str
     password_repeat: str
+    secret_key: str
 
 
 class User(BaseModel):

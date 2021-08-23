@@ -63,7 +63,7 @@ async def post_user(user: NewUser):
         new_user = db.User(
             user.username,
             au.hash_password(user.password),
-            False
+            user.secret_key,
         )
         db.session.add(new_user)
         db.session.commit()
