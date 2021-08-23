@@ -9,15 +9,12 @@ from models import NewUser
 app = FastAPI()
 
 
-@app.get("/{account_name}/deals")
-def get_deals(
-        deals: dict = Depends(getcourse_api.get_deals),
-        token: str = Depends(au.oauth2_scheme)
-):
+@app.get("/deals")
+def get_deals(deals: dict = Depends(getcourse_api.get_deals)):
     return deals
 
 
-@app.post("/{account_name}/deals")
+@app.post("/deals")
 def post_deals(deal: dict = Depends(getcourse_api.post_deal)):
     return deal
 

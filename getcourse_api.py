@@ -1,30 +1,44 @@
 import time
 import json
 import base64
+from json import JSONDecodeError
 import requests
+from fastapi import Depends
 from typing import Optional
 from config import secret_key
 from models import Deal
+from authentication import get_current_user
 
 
-def get_deals(account_name:str, status: Optional[str] = 'new'):
+def get_deals(status: Optional[str] = 'new', user: tuple = Depends(get_current_user)):
+    account_name = user[1]
     export_deals_url = f"https://{account_name}.getcourse.ru/pl/api/account/deals"
     export_url = f"https://{account_name}.getcourse.ru/pl/api/account/exports/"
     export_deals_params = {'key': secret_key, 'status': status}
     params_export = {'key': secret_key}
+
     try:
         response = requests.get(export_deals_url, params=export_deals_params)
+        request_deals = response.json()
+    except JSONDecodeError:
+        print("Ошибка при обращении к серверу.")
+        return {"error": response.text}
     except:
         print("Ошибка при обращении к серверу.")
         return {"error": True}
-    request_deals = response.json()
+
     if request_deals['success']:
         export_id = request_deals['info']['export_id']
+    else:
+        return {"error": True, "message": request_deals["error_message"]}
 
     while True:
-        time.sleep(0.1)
+        time.sleep(0.5)
         try:
-            response = requests.get(export_url + str(export_id), params=params_export)
+            response = requests.get(
+                export_url + str(export_id),
+                params=params_export
+            )
         except:
             print("Ошибка при обращении к серверу.")
             return {"error": True}
@@ -33,7 +47,8 @@ def get_deals(account_name:str, status: Optional[str] = 'new'):
             return response.json()
 
 
-def post_deal(account_name: str, deal: Deal):
+def post_deal(deal: Deal, user: tuple = Depends(get_current_user)):
+    account_name = user[1]
     params = {
         "user": {
             "email": deal.user_email,
@@ -52,13 +67,15 @@ def post_deal(account_name: str, deal: Deal):
     json_params = json.dumps(params)
     encode_params = base64.b64encode(json_params.encode("UTF-8"))
     params_import = {'action': 'add', 'key': secret_key, "params": encode_params}
-    print(params_import)
-    try:
-        print("start")
-        response = requests.post(import_deals_url, data=params_import)
 
+    try:
+        response = requests.post(import_deals_url, data=params_import)
+        deals = response.json()
+    except JSONDecodeError:
+        print("Ошибка при обращении к серверу.")
+        return {"error": response.text}
     except:
         print("Ошибка при обращении к серверу.")
         return {"error": True}
 
-    return response.json()
+    return deals
