@@ -15,12 +15,3 @@ class NewUser(BaseModel):
     password: str
     password_repeat: str
     secret_key: str
-
-
-class User(BaseModel):
-    username: str
-    disabled: Optional[bool] = None
-
-
-class UserInDB(User):
-    hashed_password: str
