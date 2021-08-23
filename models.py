@@ -3,9 +3,9 @@ from pydantic import BaseModel
 
 
 class Deal(BaseModel):
-    deal_id: int
-    offer_code: str
-    product_title: str
+    deal_id: Optional[int] = None
+    offer_code: Optional[str] = None
+    product_title: Optional[str] = None
     deal_cost: int
     user_email: str
 

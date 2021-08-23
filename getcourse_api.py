@@ -54,6 +54,7 @@ def post_deal(deal: Deal, user: tuple = Depends(get_current_user)):
         },
         "deal": {
             "product_title": deal.product_title,
+            "offer_code": deal.offer_code,
             "deal_cost": deal.deal_cost,
             'deal_id': deal.deal_id,
         },
